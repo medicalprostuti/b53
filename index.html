@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>বোটানি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "কোন জিনের মাধ্যমে আলু রোগ-প্রতিরোধী হয়েছে?",
+          options: {
+            a: "এসিটাইল ট্রান্সফারেজ জিন",
+            b: "অসমোটিন জিন",
+            c: "ক্রিস্টাল প্রোটিন জিন",
+            d: "CP-জিন",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>অসমোটিন জিন (Osmotin gene)</b> আলু গাছকে বিভিন্ন ধরণের ছত্রাকজনিত রোগ থেকে রক্ষা করতে সাহায্য করে। এই জিনটি রোগ সৃষ্টিকারী জীবাণুর কোষ প্রাচীর ভেদ করে তাদের বৃদ্ধি ব্যাহত করতে পারে, যার ফলে আলু রোগ প্রতিরোধী হয়ে ওঠে। এটি একটি প্রতিরক্ষামূলক প্রোটিন তৈরি করে যা উদ্ভিদে প্যাথোজেন প্রতিরোধী ক্ষমতা বাড়ায়।</p>",
+        },
+        {
+          id: 2,
+          question: "ট্রান্সজেনিক সয়াবিনের বৈশিষ্ট্য কোনটি?",
+          options: {
+            a: "কীটপতঙ্গ ও ভাইরাস প্রতিরোধী",
+            b: "ভিটামিন সমৃদ্ধ",
+            c: "আগাছানাশক সহনশীল",
+            d: "উচ্চ অলিয়েক এসিড সমৃদ্ধ",
+          },
+          correct: "d",
+          explanation:
+            "<p>ট্রান্সজেনিক সয়াবিনের বিভিন্ন বৈশিষ্ট্য থাকতে পারে, যেমন কীটপতঙ্গ প্রতিরোধ ক্ষমতা বা আগাছানাশক সহনশীলতা (যেমন রাউন্ডআপ রেডি সয়াবিন)। তবে এখানে উল্লিখিত অপশনগুলোর মধ্যে <b>উচ্চ অলিয়েক এসিড সমৃদ্ধ (High oleic acid) সয়াবিন</b> একটি গুরুত্বপূর্ণ উদাহরণ। এই প্রকার সয়াবিন থেকে প্রাপ্ত তেল স্বাস্থ্যকর এবং এর ব্যবহার ক্রমশ বাড়ছে, বিশেষ করে খাদ্য শিল্পে।</p>",
+        },
+        {
+          id: 3,
+          question: "কোন প্রযুক্তিতে ইনসুলিন তৈরি করা হয়?",
+          options: {
+            a: "টিস্যু কালচার",
+            b: "এক্সপ্লান্ট কালচার",
+            c: "রিকম্বিনেন্ট ডিএনএ টেকনোলজি",
+            d: "ন্যানো টেকনোলজি",
+          },
+          correct: "c",
+          explanation:
+            "<p><b>রিকম্বিনেন্ট ডিএনএ টেকনোলজি (Recombinant DNA Technology)</b> ব্যবহার করে বাণিজ্যিকভাবে ইনসুলিন তৈরি করা হয়। এই প্রযুক্তিতে, মানুষের ইনসুলিন উৎপাদনকারী জিনকে ব্যাকটেরিয়ার (যেমন <i>ই-কোলাই</i>) প্লাজমিডে প্রবেশ করানো হয়। এরপর ব্যাকটেরিয়াগুলো প্রচুর পরিমাণে ইনসুলিন উৎপাদন করে, যা ডায়াবেটিস রোগীদের জন্য ব্যবহার করা হয়। এটি জেনেটিক ইঞ্জিনিয়ারিং এর একটি সফল এবং জীবন রক্ষাকারী প্রয়োগ।</p>",
+        },
+        {
+          id: 4,
+          question: "কোনটি ভাইরাস বৃদ্ধিতে বাঁধা দেয়?",
+          options: {
+            a: "Interferon",
+            b: "Lactorine",
+            c: "Lysozyme",
+            d: "Defensin",
+          },
+          correct: "a",
+          explanation:
+            "<p><b>ইন্টারফেরন (Interferon)</b> হলো প্রোটিন যা ভাইরাস সংক্রমণের প্রতিক্রিয়ায় প্রাণীকোষ দ্বারা উৎপাদিত হয়। এটি ভাইরাসকে সরাসরি ধ্বংস করে না, তবে ভাইরাসের প্রতিলিপি তৈরির প্রক্রিয়াকে ব্যাহত করে এবং অন্যান্য রোগ প্রতিরোধক কোষকে ভাইরাসের বিরুদ্ধে লড়াই করতে সংকেত পাঠায়। এটি শরীরের প্রাকৃতিক অ্যান্টিভাইরাল প্রতিরক্ষা ব্যবস্থার একটি গুরুত্বপূর্ণ অংশ।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "কোনটি মানুষের শরীরে ভাইরাসের সংক্রমণ ও ক্যান্সার প্রতিরোধ করে?",
+          options: {
+            a: "ইন্টারফেরন",
+            b: "ইনসুলিন",
+            c: "সোমাটোস্ট্যাটিন",
+            d: "গ্লোবিউলিন",
+          },
+          correct: "a",
+          explanation:
+            "<p><b>ইন্টারফেরন (Interferon)</b> মানুষের শরীরে ভাইরাসের সংক্রমণ প্রতিরোধে গুরুত্বপূর্ণ ভূমিকা পালন করে। এটি অ্যান্টিভাইরাল প্রভাব ফেলে ভাইরাসের প্রতিলিপি তৈরি বন্ধ করে। এছাড়াও, কিছু ইন্টারফেরনের ক্যান্সার বিরোধী বৈশিষ্ট্যও রয়েছে, যা ক্যান্সার কোষের বৃদ্ধি এবং বিস্তারকে নিয়ন্ত্রণ করতে সাহায্য করে, শরীরের রোগ প্রতিরোধ ক্ষমতাকে সক্রিয় করে।</p>",
+        },
+        {
+          id: 6,
+          question: "নিচের কোনটি ভাইরাসকে নিষ্ক্রিয় করতে পারে?",
+          options: {
+            a: "রাইবোজোম",
+            b: "ইন্টারফেরন",
+            c: "হরমোন",
+            d: "ব্যাকটেরিয়া",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>ইন্টারফেরন (Interferon)</b> ভাইরাসের প্রতিলিপি তৈরির প্রক্রিয়াকে ব্যাহত করে ভাইরাসকে নিষ্ক্রিয় করতে পারে। এটি ভাইরাসের বিরুদ্ধে শরীরের প্রতিরক্ষা ব্যবস্থার একটি গুরুত্বপূর্ণ অংশ, যা সংক্রমণের সময় আক্রান্ত কোষ থেকে নিঃসৃত হয় এবং পার্শ্ববর্তী কোষগুলোকে সুরক্ষা দেয়।</p>",
+        },
+        {
+          id: 7,
+          question: "নিচের কোনটি ক্যান্সার রোগের চিকিৎসায় ব্যবহৃত হয়?",
+          options: {
+            a: "Heparin",
+            b: "Immunoglobulin",
+            c: "Interferon",
+            d: "Histone protein",
+          },
+          correct: "c",
+          explanation:
+            "<p><b>ইন্টারফেরন (Interferon)</b> কিছু ধরণের ক্যান্সার রোগের চিকিৎসায় ব্যবহৃত হয়। এটি ক্যান্সার কোষের বৃদ্ধিকে ধীর করে এবং শরীরের রোগ প্রতিরোধ ক্ষমতাকে ক্যান্সার কোষের বিরুদ্ধে সক্রিয় করে তোলে। বিশেষত হেপাটাইটিস সি এবং কিছু ধরণের রক্ত ​​ক্যান্সারের চিকিৎসায় এটি ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "ভাইরাসের আক্রমণে শরীরের ভিতরে স্বতঃস্ফূর্তভাবে নিচের কোনটি তৈরি হয়?",
+          options: {
+            a: "এন্টিবডি",
+            b: "ইন্টারফেরন",
+            c: "নিউট্রোফিল",
+            d: "মনোসাইট",
+          },
+          correct: "b",
+          explanation:
+            "<p>ভাইরাসের আক্রমণে শরীরের কোষগুলো <b>ইন্টারফেরন (Interferon)</b> নামক প্রোটিন তৈরি করে। এই ইন্টারফেরন পার্শ্ববর্তী কোষগুলোকে ভাইরাসের সংক্রমণ থেকে রক্ষা করতে এবং রোগ প্রতিরোধ ব্যবস্থাকে সক্রিয় করতে সাহায্য করে। এটি শরীরের প্রথম সারির অ্যান্টিভাইরাল প্রতিক্রিয়া।</p>",
+        },
+        {
+          id: 9,
+          question: "ট্রান্সজেনিক প্রাণী থেকে নিম্নের কোনটি প্রথম উৎপাদিত হয়?",
+          options: {
+            a: "Lactoferrin",
+            b: "Human interleukin-2",
+            c: "Human tissue-type plasminogen activator",
+            d: "Human &alpha; antitrypsin",
+          },
+          correct: "d",
+          explanation:
+            "<p>ট্রান্সজেনিক প্রাণী ব্যবহার করে প্রথম বাণিজ্যিকভাবে উৎপাদিত প্রোটিন হলো <b>হিউম্যান আলফা-১ অ্যান্টিট্রিপসিন (Human &alpha;<sub>1</sub>-antitrypsin)</b>। এটি ভেড়ার দুধে পাওয়া গিয়েছিল এবং সিস্টিক ফাইব্রোসিস এবং এমফিসেমা (ফুসফুসের রোগ) রোগের চিকিৎসায় ব্যবহৃত হয়। এটি মলিকুলার ফার্মিং এর একটি প্রাথমিক সাফল্য।</p>",
+        },
+        {
+          id: 10,
+          question: "নিম্নের কোন তথ্যটি ইন্টারফেরনের জন্য সঠিক?",
+          options: {
+            a: "ক্যানসার কোষকে ধ্বংস করে",
+            b: "Natural killer cells এর ক্ষমতা কমিয়ে দেয়",
+            c: "B ও T লিম্ফোসাইটের সংখ্যা বৃদ্ধি করে",
+            d: "অ্যান্টিবডি উৎপাদন করে",
+          },
+          correct: "a",
+          explanation:
+            "<p>ইন্টারফেরনের একটি গুরুত্বপূর্ণ কাজ হলো <b>ক্যান্সার কোষকে ধ্বংস করতে সাহায্য করা</b> বা তাদের বৃদ্ধিকে ব্যাহত করা। এটি সরাসরি ক্যান্সার কোষের বৃদ্ধি বন্ধ করতে পারে অথবা শরীরের রোগ প্রতিরোধ কোষগুলোকে (যেমন ন্যাচারাল কিলার কোষ) ক্যান্সার কোষের বিরুদ্ধে সক্রিয় করে তোলে। এটি B ও T লিম্ফোসাইটের সংখ্যা সরাসরি বৃদ্ধি করে না বা অ্যান্টিবডি উৎপাদন করে না।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "রিকম্বিনেন্ট ডিএনএ পদ্ধতিতে ই-কোলাই ব্যাকটেরিয়াকে কাজে লাগিয়ে নিম্নের কোনটি তৈরি করা হয়?",
+          options: {
+            a: "পেনিসিলিন",
+            b: "ইনস্যুলিন",
+            c: "ভিটামিন কে",
+            d: "রেটিনোল",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>রিকম্বিনেন্ট ডিএনএ প্রযুক্তির মাধ্যমে ই-কোলাই (<i>E. coli</i>) ব্যাকটেরিয়াকে ব্যবহার করে বাণিজ্যিকভাবে ইনসুলিন তৈরি করা হয়</b>। মানুষের ইনসুলিন উৎপাদনকারী জিন ব্যাকটেরিয়ার প্লাজমিডে প্রবেশ করিয়ে এই কাজটি সম্পন্ন করা হয়, যা ডায়াবেটিস চিকিৎসায় বিপ্লব এনেছে। পেনিসিলিন ছত্রাক থেকে উৎপন্ন হয় এবং ভিটামিন কে ও রেটিনোল অন্য পদ্ধতিতে সংশ্লেষিত হয়।</p>",
+        },
+        {
+          id: 12,
+          question: "ইনসুলিন তৈরি হয় অগ্ন্যাশয়ের কোন কোষে?",
+          options: {
+            a: "&alpha; কোষ",
+            b: "&beta; কোষ",
+            c: "&gamma; কোষ",
+            d: "&epsilon; কোষ",
+          },
+          correct: "b",
+          explanation:
+            "<p>ইনসুলিন হরমোন অগ্ন্যাশয়ের আইলেটস অফ ল্যাঙ্গারহ্যান্সের <b>বিটা (&beta;) কোষ</b> থেকে নিঃসৃত হয়। এই হরমোন রক্তে গ্লুকোজের মাত্রা নিয়ন্ত্রণে গুরুত্বপূর্ণ ভূমিকা পালন করে। আলফা (&alpha;) কোষ গ্লুকাগন, ডেল্টা (&gamma;) কোষ সোমাটোস্ট্যাটিন এবং এপসিলন (&epsilon;) কোষ ঘ্রেলিন তৈরি করে।</p>",
+        },
+        {
+          id: 13,
+          question:
+            "ইউরোপিয়ান কর্নবোরার প্রতিরোধে কোন অণুজীবটি ব্যবহার করা হয়?",
+          options: {
+            a: "<i>Bacillus dysenteri</i>",
+            b: "<i>Bacillus anthracis</i>",
+            c: "<i>Bacillus thuringiensis</i>",
+            d: "<i>Bacillus denitrificans</i>",
+          },
+          correct: "c",
+          explanation:
+            "<p>ইউরোপিয়ান কর্নবোরার (European corn borer) মতো ক্ষতিকর কীটপতঙ্গের প্রতিরোধে <b><i>ব্যাসিলাস থুরিংয়েনসিস</i> (<i>Bacillus thuringiensis</i> - Bt)</b> নামক অণুজীবটি ব্যবহার করা হয়। এই ব্যাকটেরিয়াম <b>ক্রিস্টাল প্রোটিন (Bt টক্সিন)</b> উৎপন্ন করে, যা নির্দিষ্ট কীটপতঙ্গের জন্য বিষাক্ত এবং শস্যকে রক্ষা করে। জেনেটিক ইঞ্জিনিয়ারিং এর মাধ্যমে এই জিনকে শস্যের মধ্যে প্রবেশ করিয়ে Bt-শস্য তৈরি করা হয়।</p>",
+        },
+        {
+          id: 14,
+          question: "আকরিক হতে ইউরেনিয়াম, সিসা নিষ্কাশনে কী ব্যবহার করা হয়?",
+          options: {
+            a: "জিএমএম",
+            b: "অণুজীব",
+            c: "প্রোটোজোয়া",
+            d: "জিএমও",
+          },
+          correct: "d",
+          explanation:
+            "<p>আকরিক হতে ইউরেনিয়াম ও সিসার মতো ভারী ধাতু নিষ্কাশনের জন্য <b>জেনেটিক্যালি মডিফাইড অর্গানিজম (GMO)</b> বা জিনগতভাবে পরিবর্তিত জীব ব্যবহার করা হয়। এই প্রক্রিয়াটি <b>বায়োলিচিং (Bioleaching)</b> নামে পরিচিত, যেখানে বিশেষ অণুজীব খনিজ পদার্থ থেকে ধাতু আহরণে সাহায্য করে। এই জিএমও অণুজীবগুলোকে বিশেষভাবে ডিজাইন করা হয় যাতে তারা ধাতুকে আরও কার্যকরভাবে আবদ্ধ করতে বা দ্রবীভূত করতে পারে।</p>",
+        },
+        {
+          id: 15,
+          question: "পানিতে তেল শোধনে ব্যবহৃত হয়-",
+          options: {
+            a: "<i>Pseudomonas tabaci</i>",
+            b: "<i>Pseudomonas aeruginosa</i>",
+            c: "<i>Pseudomonas syringe</i>",
+            d: "<i>Xanthomonas citri</i>",
+          },
+          correct: "b",
+          explanation:
+            "<p>পানিতে তেল দূষণ (oil spills) কমানোর জন্য <b><i>সিউডোমোনাস এরুজিনোসা</i> (<i>Pseudomonas aeruginosa</i>)</b> নামক ব্যাকটেরিয়া ব্যবহার করা হয়। এই ব্যাকটেরিয়া হাইড্রোকার্বন (তেলের মূল উপাদান) ভেঙে ফেলতে পারে এবং বায়োরিমিডিয়েশন (bioremediation) প্রক্রিয়ার মাধ্যমে তেল দূষণ নিয়ন্ত্রণে সাহায্য করে।</p>",
+        },
+        {
+          id: 16,
+          question: "ইন্টারফেরন কোন ধরনের পদার্থ?",
+          options: {
+            a: "প্রোটিন",
+            b: "শর্করা",
+            c: "চর্বি",
+            d: "গ্লাইকোলিপিড",
+          },
+          correct: "a",
+          explanation:
+            "<p>ইন্টারফেরন হলো <b>প্রোটিন জাতীয় পদার্থ</b>। এটি মূলত গ্লাইকোপ্রোটিন (glycoprotein) যা ভাইরাস, ব্যাকটেরিয়া, পরজীবী ও টিউমার কোষের বিরুদ্ধে প্রতিরোধ ক্ষমতা গড়ে তোলে। স্তন্যপায়ী প্রাণীদের কোষে এই প্রোটিন উৎপন্ন হয় এবং এটি শরীরের রোগ প্রতিরোধ ব্যবস্থার একটি গুরুত্বপূর্ণ অংশ।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "জীবপ্রযুক্তির মাধ্যমে E. coli ব্যাকটেরিয়া ব্যবহার করে নিচের কোনটি উৎপাদন করা হয়?",
+          options: {
+            a: "এনজাইম",
+            b: "পেনিসিলিন",
+            c: "ইনসুলিন",
+            d: "এন্টিসেপটিক",
+          },
+          correct: "c",
+          explanation:
+            "<p>জীবপ্রযুক্তির মাধ্যমে <b>ই-কোলাই (<i>E. coli</i>) ব্যাকটেরিয়া ব্যবহার করে ইনসুলিন উৎপাদন করা হয়</b>। রিকম্বিনেন্ট ডিএনএ প্রযুক্তির মাধ্যমে মানুষের ইনসুলিন উৎপাদনকারী জিন ব্যাকটেরিয়ার প্লাজমিডে প্রবেশ করানো হয়, ফলে ব্যাকটেরিয়া প্রচুর পরিমাণে ইনসুলিন তৈরি করতে সক্ষম হয়, যা ডায়াবেটিস রোগীদের চিকিৎসায় ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 18,
+          question: "মানবদেহে ইনসুলিন হরমোনের কাজ কোনটি?",
+          options: {
+            a: "রক্তে গ্লুকোজের পরিমাণ বৃদ্ধি করা",
+            b: "রক্তে গ্লুকোজ পরিপাক করা",
+            c: "রক্তে অক্সিজেন পরিবহন করা",
+            d: "রক্ত চাপ নিয়ন্ত্রণ করা",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানবদেহে ইনসুলিন হরমোনের প্রধান কাজ হলো রক্তে গ্লুকোজের মাত্রা <b>কমানো</b>। এটি গ্লুকোজকে কোষে প্রবেশ করতে সাহায্য করে, যেখানে এটি শক্তি উৎপাদনের জন্য ব্যবহৃত হয় বা গ্লাইকোজেনে রূপান্তরিত হয়। সুতরাং, এটিকে <b>রক্তে গ্লুকোজ পরিপাক করা</b> বা গ্লুকোজ ব্যবহার নিয়ন্ত্রণ করাও বলা যেতে পারে।</p>",
+        },
+        {
+          id: 19,
+          question: "মলিকুলার ফার্মিং কী?",
+          options: {
+            a: "উন্নত গরু পালনের পদ্ধতি",
+            b: "ট্রান্সজেনিক প্রাণী থেকে ঔষধ আহরণ",
+            c: "টিস্যু কালচার প্রযুক্তি",
+            d: "পোল্ট্রি শিল্পে উন্নয়ন",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>মলিকুলার ফার্মিং (Molecular farming)</b> হলো এমন একটি প্রক্রিয়া যেখানে জেনেটিক্যালি পরিবর্তিত উদ্ভিদ বা প্রাণীকে ব্যবহার করে মূল্যবান ঔষধী প্রোটিন (যেমন হরমোন, অ্যান্টিবডি, ভ্যাকসিন) বা অন্যান্য জৈব অণু উৎপাদন করা হয়। <b>ট্রান্সজেনিক প্রাণী থেকে ঔষধ আহরণ</b> এই পদ্ধতির একটি গুরুত্বপূর্ণ অংশ, যেখানে প্রাণীর দুধ, রক্ত বা অন্যান্য অংশে ঔষধী পদার্থ তৈরি হয়।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "কোন ব্যাকটেরিয়া থেকে একটি জিন যোগ করার মাধ্যমে ট্রান্সজেনিক তুলা গাছ সৃষ্টি করা হয়েছে?",
+          options: {
+            a: "<i>Agrobacterium tumefaciens</i>",
+            b: "<i>Bacillus subtilis</i>",
+            c: "<i>Bacillus thuringiensis</i>",
+            d: "<i>Streptococcus sp.</i>",
+          },
+          correct: "c",
+          explanation:
+            "<p><b><i>ব্যাসিলাস থুরিংয়েনসিস</i> (<i>Bacillus thuringiensis</i> - Bt)</b> নামক ব্যাকটেরিয়ার ক্রিস্টাল প্রোটিন (Bt) জিন যোগ করার মাধ্যমে ট্রান্সজেনিক তুলা গাছ সৃষ্টি করা হয়েছে। এই জিন তুলা গাছকে কিছু নির্দিষ্ট ক্ষতিকর কীটপতঙ্গের আক্রমণ থেকে রক্ষা করে, যেমন আমেরিকান বলওয়ার্ম, কারণ Bt প্রোটিন পোকার জন্য বিষাক্ত।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "বর্তমানে আমেরিকায় চাষকৃত সয়াবিনের কত ভাগ ট্রান্সজেনিক প্রকরণ?",
+          options: {
+            a: "১৫",
+            b: "২৫",
+            c: "৩৫",
+            d: "৮০",
+          },
+          correct: "d",
+          explanation:
+            "<p>বর্তমানে আমেরিকায় চাষকৃত সয়াবিনের প্রায় <b>৮০ ভাগই ট্রান্সজেনিক প্রকরণ</b>। এই সয়াবিনগুলো সাধারণত আগাছানাশক সহনশীল (যেমন গ্লাইফোসেট সহনশীল) অথবা কীটপতঙ্গ প্রতিরোধী বৈশিষ্ট্যযুক্ত হয়ে থাকে, যা কৃষকদের জন্য চাষাবাদ সহজ করে তোলে এবং উৎপাদন বৃদ্ধি করে।</p>",
+        },
+        {
+          id: 22,
+          question: "হাইড্রোকার্বন অক্সিডাইজিং জীব হিসেবে কাজ করে কোনটি?",
+          options: {
+            a: "<i>Saccharomyces</i>",
+            b: "<i>Penicillium</i>",
+            c: "<i>Nocardia</i>",
+            d: "<i>Torula</i>",
+          },
+          correct: "c",
+          explanation:
+            "<p><b>নোকার্ডিয়া (<i>Nocardia</i>)</b> নামক ব্যাকটেরিয়া হাইড্রোকার্বন অক্সিডাইজিং জীব হিসেবে কাজ করে। এরা জটিল হাইড্রোকার্বন যৌগগুলোকে (যেমন তেল বা পেট্রোলিয়ামের উপাদান) ভেঙে ফেলতে পারে এবং পরিবেশ থেকে দূষিত পদার্থ অপসারণে (বায়োরিমিডিয়েশন) সাহায্য করে।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "গর্ভাবস্থার শুরুতে জীবপ্রযুক্তি ব্যবহার করলে কোন রোগ নিরাময়ের সম্ভাবনা থাকে?",
+          options: {
+            a: "হিমোফিলিয়া",
+            b: "ইউরোকাইনেজ",
+            c: "থ্যালাসেমিয়া",
+            d: "ফেনিলকেটোনুরিয়া",
+          },
+          correct: "c",
+          explanation:
+            "<p>গর্ভাবস্থার শুরুতে জীবপ্রযুক্তি ব্যবহার করে <b>থ্যালাসেমিয়া (Thalassemia)</b>-এর মতো কিছু জিনগত রোগ নিরাময়ের সম্ভাবনা থাকে। জিন থেরাপি (Gene therapy) নামক প্রযুক্তির মাধ্যমে ত্রুটিপূর্ণ জিন প্রতিস্থাপন বা সংশোধন করে এই রোগের চিকিৎসা করা যেতে পারে, যা ভ্রূণ অবস্থায় প্রয়োগ করা সম্ভব।</p>",
+        },
+        {
+          id: 24,
+          question: "সুপার রাইসে/গোল্ডেন রাইসে কোন ভিটামিন থাকে?",
+          options: {
+            a: "A",
+            b: "B-6",
+            c: "D",
+            d: "E",
+          },
+          correct: "a",
+          explanation:
+            "<p>সুপার রাইস বা গোল্ডেন রাইসে <b>ভিটামিন এ (Vitamin A)</b> বিশেষভাবে সমৃদ্ধ করা হয়। এটি জেনেটিক ইঞ্জিনিয়ারিংয়ের মাধ্যমে তৈরি করা হয়েছে যাতে দরিদ্র দেশগুলোতে ভিটামিন এ এর অভাবজনিত রোগ (যেমন রাতকানা) প্রতিরোধ করা যায়। গোল্ডেন রাইসে বিটা-ক্যারোটিন উৎপাদনকারী জিন প্রবেশ করানো হয়েছে, যা শরীরে ভিটামিন এ তে রূপান্তরিত হয়।</p>",
+        },
+        {
+          id: 25,
+          question: "নিচের কোনটি জলাতঙ্ক রোগের চিকিৎসায় সাফল্য অর্জন করেছে?",
+          options: {
+            a: "হিউমুলিন",
+            b: "ইন্টারফেরন",
+            c: "প্লাজমিনোজেন",
+            d: "ইরিথ্রোপোয়েটিন",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>ইন্টারফেরন (Interferon)</b> জলাতঙ্ক রোগের চিকিৎসায় কিছু ক্ষেত্রে সাফল্য দেখিয়েছে, বিশেষ করে প্রাক-সংক্রমণ পর্যায়ে বা যখন ভাইরাস সবেমাত্র সংক্রমণ শুরু করেছে। এটি ভাইরাস-প্রতিরোধী প্রোটিন যা শরীরের রোগ প্রতিরোধ ব্যবস্থাকে ভাইরাসের বিরুদ্ধে লড়াই করতে সাহায্য করে। তবে জলাতঙ্কের চিকিৎসার মূল ভিত্তি হলো ভ্যাকসিন এবং ইমিউনোগ্লোবুলিন।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "রিকম্বিনেন্ট DNA প্রযুক্তিতে নিচের কোন অণুজীব ব্যাপকভাবে ব্যবহৃত হয়?",
+          options: {
+            a: "<i>Azotobactor</i>",
+            b: "<i>Pseudomonas</i>",
+            c: "<i>Clostridium</i>",
+            d: "<i>E.coli</i>",
+          },
+          correct: "d",
+          explanation:
+            "<p>রিকম্বিনেন্ট DNA প্রযুক্তিতে <b><i>ই-কোলাই</i> (<i>E. coli</i>) ব্যাকটেরিয়া</b> ব্যাপকভাবে ব্যবহৃত হয়। এর সহজ জিনগত গঠন, দ্রুত প্রজনন ক্ষমতা, প্লাজমিড বহন করার সুবিধার কারণে এটি জিন ক্লোনিং এবং প্রোটিন উৎপাদনের জন্য পছন্দের জীব। <i>E. coli</i> কে জিন প্রকৌশল গবেষণায় একটি 'মডেল অর্গানিজম' হিসেবে বিবেচনা করা হয়।</p>",
+        },
+        {
+          id: 27,
+          question: "সুপার বাগ কোনটি ভাঙ্গতে সক্ষম?",
+          options: {
+            a: "কার্বনেট",
+            b: "হাইড্রোকার্বন",
+            c: "পিউরিন",
+            d: "অ্যারোমেটিক যৌগ",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>সুপার বাগ (Superbug)</b> হলো জেনেটিক্যালি পরিবর্তিত কিছু ব্যাকটেরিয়া (যেমন <i>Pseudomonas</i> এর কিছু প্রজাতি) যা <b>হাইড্রোকার্বন</b> ভাঙতে সক্ষম। এগুলো মূলত তেল স্পিলস (oil spills) পরিষ্কার করার কাজে বিশেষভাবে উপযোগী, কারণ তারা অপরিশোধিত তেল এবং পেট্রোলিয়ামের বিভিন্ন উপাদানকে ভেঙে পরিবেশ থেকে দূষণ দূর করতে পারে।</p>",
+        },
+        {
+          id: 28,
+          question: "Bt- বেগুন উৎপন্ন করার জন্য কোন অণুজীবটি ব্যবহার করা হয়?",
+          options: {
+            a: "<i>Bacillus dysenteri</i>",
+            b: "<i>Bacillus anthracis</i>",
+            c: "<i>Bacillus thuringiensis</i>",
+            d: "<i>Bacillus denitrificans</i>",
+          },
+          correct: "c",
+          explanation:
+            "<p>Bt- বেগুন উৎপন্ন করার জন্য <b><i>ব্যাসিলাস থুরিংয়েনসিস</i> (<i>Bacillus thuringiensis</i> - Bt)</b> নামক অণুজীবটি ব্যবহার করা হয়। এই ব্যাকটেরিয়ামের Bt জিন (ক্রিস্টাল প্রোটিন উৎপাদনকারী) বেগুনের মধ্যে প্রবেশ করানো হয়, যা বেগুনকে <i>লেপিডোপ্টেরা</i> বর্গের কিছু ক্ষতিকর পোকার (যেমন ডায়মন্ডব্যাক মথ) আক্রমণ থেকে রক্ষা করে।</p>",
+        },
+        {
+          id: 29,
+          question: "ইনসুলিন মানবদেহের কোন অঙ্গাণু থেকে নিঃসৃত হয়?",
+          options: {
+            a: "যকৃত",
+            b: "অগ্ন্যাশয়",
+            c: "পাকস্থলি",
+            d: "ক্ষুদ্রান্ত্র",
+          },
+          correct: "b",
+          explanation:
+            "<p>ইনসুলিন মানবদেহের <b>অগ্ন্যাশয় (Pancreas)</b> নামক অঙ্গের বিটা কোষ (beta cells) থেকে নিঃসৃত হয়। এটি একটি হরমোন যা রক্তে গ্লুকোজের মাত্রা নিয়ন্ত্রণে গুরুত্বপূর্ণ ভূমিকা পালন করে।</p>",
+        },
+        {
+          id: 30,
+          question: "ইন্টারফেরন নিঃসৃত হয়-",
+          options: {
+            a: "মাস্ট কোষ হতে",
+            b: "ব্যাকটেরিয়া আক্রান্ত কোষ হতে",
+            c: "ক্যান্সার কোষ হতে",
+            d: "ভাইরাস আক্রান্ত কোষ হতে",
+          },
+          correct: "d",
+          explanation:
+            "<p>ইন্টারফেরন মূলত <b>ভাইরাস আক্রান্ত কোষ থেকে</b> নিঃসৃত হয়। ভাইরাসের সংক্রমণ হলে কোষগুলো প্রতিরোধমূলক ব্যবস্থা হিসেবে ইন্টারফেরন নামক প্রোটিন তৈরি করে, যা পার্শ্ববর্তী সুস্থ কোষগুলোকে ভাইরাসের আক্রমণ থেকে রক্ষা করতে সাহায্য করে এবং রোগ প্রতিরোধ ব্যবস্থাকে সক্রিয় করে তোলে।</p>",
+        },
+        {
+          id: 31,
+          question:
+            "ট্রান্সজেনিক ক্লোভার ঘাসে নিচের কোন উপাদানটি উৎপাদনকারী জিন সংযোজন করা হয়েছে?",
+          options: {
+            a: "সালফার",
+            b: "আয়রন",
+            c: "জিংক",
+            d: "কপার",
+          },
+          correct: "a",
+          explanation:
+            "<p>ট্রান্সজেনিক ক্লোভার ঘাসে <b>সালফার (Sulfur)</b> উৎপাদনকারী জিন সংযোজন করা হয়েছে। এর ফলে এই ঘাস পশু খাদ্যের পুষ্টিগুণ বৃদ্ধি করে এবং মাটিতে সালফারের অভাব পূরণে সাহায্য করতে পারে। সালফার অ্যামিনো অ্যাসিডের একটি গুরুত্বপূর্ণ উপাদান, যা প্রাণীর প্রোটিন সংশ্লেষণের জন্য অপরিহার্য।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                            <label class="option" data-option="${option}">
+                              <div class="circle">${option}</div>
+                              <span class="option-text">${question.options[option]}</span>
+                            </label>
+                          `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                               <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                               <div class="explanation-content">
+                                 <div class="explanation-label">ব্যাখ্যা:</div>
+                                 ${question.explanation}
+                               </div>
+                             </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                          <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                          <div class="options">
+                            ${optionsHTML}
+                          </div>
+                          ${explanationHTML}
+                        `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
